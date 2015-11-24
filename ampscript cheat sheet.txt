@@ -1,0 +1,69 @@
+// Dave's AMPScript cheat sheet.
+
+// AMPScript is ExactTarget (SFDC Marketing Cloud)'s server side scripting language.
+// It's a bit of a pig, plus the docs are numerous and the examples aren't contextual.
+
+// This assumes you don't need hand holding, and just need to get your head around it.
+// It's also my reference for the snippets I use all the time (I'm a formatting stickler).
+
+// These examples come from microsites I've written - adapt 'em for use elsewhere.
+// Multi line AMPScript %%[contained within delimiters]%% gets interpreted on the server.
+// Single line AMPScript %%=can use this style syntax=%% if you want.
+
+
+// Assign URL key/value pairs to @someVar, eg: et.company.com/form?country=AU&bu=MP
+set @countryCode = queryParameter("country")
+set @businessUnit = queryParameter("bu")
+
+
+// Look up an ET DB ("Data Extension") and put resulting rows into a var. Multiple pairs work.
+set @queryResults = LookupRows("DE Name or Key", "searchThisField", @forThisValue)
+set @translate = LookupRows("Label Translator DB", "country", @countryCode, "bu", "specificBusinessUnit")
+
+
+// A one-liner for storing the value in "fieldName" of the 1st query result into @someVar.
+set @translatedLabelFormType = Field(Row(@translate, 1), "formType")
+set @translatedLabelLastName = Field(Row(@translate, 1), "lastName")
+set @translatedLabelOrganisation = Field(Row(@translate, 1), "organisation")
+
+
+// The insert and upsert operations in ET SUCK. Check the docs!
+// This is the Not An Email version of insertData().
+// To do this in an Email, use insertDE(). You might need to specify numFields being in/upserted.
+// I know, crazy. Anyways, again, CHECK THE DOCS!
+InsertData("Contact Form", "emailAddress", @emailAddress, "firstName", @firstName, "lastName", @lastName, "phone", @phone)
+
+
+// Conditional syntax is "if then elseif else endif". output() dumps text.
+if rowcount(@translate) == 0 then
+  set @translate = LookupRows("Translator", "country", "AU", "bu", "somethingWeKnowWorks")
+  
+  output(concat("No results for the combination of ", @countruCode, " and ", @businessUnit " found in the Translator DE. Falling back to defaults. Please check ET's data extensions, your URL and any debug options. If symptoms persist, contact dave@field.bz with the address of this page.<br>"))
+endif
+
+
+// For loop syntax is "for to do next". Before the practical example though:
+// BONUS: you can combine AMPScript and client side Javascript if you're careful.
+// AMPScript loops will vomit n blocks of Javascript into the browser on load.
+// Be careful of variable names, they can get confusing when juggling languages.
+
+// This will to fill an option element (HTML select drop down) with the results of a DB query.
+%%[
+var @i
+for @i=1 to RowCount(@disciplines) do
+]%%
+  var currentDiscipline = ("%%=v(Field(Row(@disciplines, @i),"discipline"))=%%");
+  var Discipline = document.getElementById("Discipline");
+  var option = document.createElement("option");
+  option.text = currentDiscipline;
+  option.value = currentDiscipline;
+  Discipline.add(option);
+%%[
+next @i
+]%%
+
+
+
+
+
+
