@@ -11,13 +11,13 @@
 // Single line AMPScript %%=can use this style syntax=%% if you want.
 
 
-// Assign URL key/value pairs to @someVar, eg: et.company.com/form?country=AU&bu=MP
+// Assign URL key/value pairs to @some_var, eg: et.company.com/form?country=AU&state=NSW
 set @country_code = queryParameter("country")
-set @business_unit = queryParameter("bu")
+set @state = queryParameter("state")
 
 
-// Look up a Data Extension (T-SQL table in SFDC:MC) and put resulting rows into a var. Multiple pairs work.
-set @queryResults = LookupRows("DE Name or Key", "search_this_field", @for_this_value)
+// Look up a Data Extension (T-SQL table in SFDC:MC) and put resulting rows into a @variable. Multiple pairs work.
+set @query_results = LookupRows("DE Name or Key", "search_this_field", @for_this_value)
 set @translate = LookupRows("Label Translator DB", "country", @country_code, "other_field", "other_var")
 
 
@@ -26,17 +26,18 @@ set @trans_label_form_type = Field(Row(@translate, 1), "form_type")
 set @trans_label_last_name = Field(Row(@translate, 1), "last_name")
 
 
-// There's email and not email versions of insert(), upsert() etc.
-// This is the Not An Email version of insertData().
-// To do this in an Email, use insertDE(). You might need to specify numFields being in/upserted. Check the docs.
+// There's email and a not-email versions of insert(), upsert() etc.
+// This is the Not-Email (Microsites etc) version of working with data from a DE.
+// To do this in an Email, use insertDE(). You might need to specify number of fields being in/upserted. Check the docs.
 InsertData("Example Contact Form DE", "email_address", @email_address, "first_name", @first_name, "last_name", @last_name)
 
 
-// Conditional syntax is "if then elseif else endif". output() dumps text.
+// Conditional syntax follows the "if then elseif else endif" pattern.
+// output() dumps text.
 if rowcount(@translate) == 0 then
-  set @translate = LookupRows("Translation DE", "country", "AU", "bu", "some_var")
+  set @translate = LookupRows("Translation DE", "country_code", "AU", "state", "some_var")
   
-  output(concat("No results for the combination of ", @country_code, " and ", @business_unit " found in the Translation DE. Falling back to defaults. Please check ET's data extensions, your URL and any debug options. If symptoms persist, contact dave@field.bz with the address of this page.<br>"))
+  output(concat("No results for the combination of @country_code (using: ", @country_code, ") and @state (using: ", @state, ") found in the Translation DE. Falling back to defaults. Please check ET's data extensions, your URL and any debug options. If symptoms persist, contact dave@field.bz with the address of this page.<br>"))
 endif
 
 
